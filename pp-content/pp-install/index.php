@@ -89,6 +89,15 @@
 
         
     if(isset($_POST['adminName'])){
+        // Ensure temp config is loaded for DB connection
+        $tempConfigPath = __DIR__ . '/../../pp-temp-config.php';
+        if(file_exists($tempConfigPath)){
+            require_once $tempConfigPath;
+        } else {
+            echo json_encode(['status' => 'false', 'message' => 'Database config not found. Please go back to the Database step.']);
+            exit;
+        }
+
         $adminName = $_POST['adminName'];
         $adminEmail = $_POST['adminEmail'];
         $adminUsername = $_POST['adminUsername'];
