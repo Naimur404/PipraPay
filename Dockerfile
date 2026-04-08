@@ -28,25 +28,27 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
 # Clean up build deps
 RUN apk del $PHPIZE_DEPS imagemagick-dev
 
-# Configure PHP-FPM: Unix socket, permissions
-RUN { \
-    echo '[global]'; \
-    echo 'daemonize = no'; \
-    echo 'error_log = /proc/self/fd/2'; \
-    echo '[www]'; \
-    echo 'listen = /run/php-fpm.sock'; \
-    echo 'listen.owner = nobody'; \
-    echo 'listen.group = nobody'; \
-    echo 'listen.mode = 0660'; \
-    echo 'user = nobody'; \
-    echo 'group = nobody'; \
-    echo 'pm = dynamic'; \
-    echo 'pm.max_children = 20'; \
-    echo 'pm.start_servers = 5'; \
-    echo 'pm.min_spare_servers = 3'; \
-    echo 'pm.max_spare_servers = 10'; \
-    echo 'catch_workers_output = yes'; \
-} > /usr/local/etc/php-fpm.d/zz-custom.conf
+# Replace the default PHP-FPM pool config so we do not define the same pool twice.
+RUN rm -f /usr/local/etc/php-fpm.d/www.conf \
+    && { \
+        echo '[global]'; \
+        echo 'daemonize = no'; \
+        echo 'error_log = /proc/self/fd/2'; \
+        echo '[www]'; \
+        echo 'user = www-data'; \
+        echo 'group = www-data'; \
+        echo 'listen = /run/php-fpm.sock'; \
+        echo 'listen.owner = www-data'; \
+        echo 'listen.group = www-data'; \
+        echo 'listen.mode = 0660'; \
+        echo 'pm = dynamic'; \
+        echo 'pm.max_children = 20'; \
+        echo 'pm.start_servers = 5'; \
+        echo 'pm.min_spare_servers = 3'; \
+        echo 'pm.max_spare_servers = 10'; \
+        echo 'catch_workers_output = yes'; \
+        echo 'clear_env = no'; \
+    } > /usr/local/etc/php-fpm.d/www.conf
 
 # PHP settings
 RUN { \
@@ -60,8 +62,8 @@ RUN { \
 # Copy nginx config
 COPY docker/nginx.conf /etc/nginx/http.d/default.conf
 
-# Ensure nginx runs as nobody (to match PHP-FPM socket owner)
-RUN sed -i 's/user nginx;/user nobody;/' /etc/nginx/nginx.conf
+# Ensure nginx runs as www-data so it can talk to the PHP-FPM socket.
+RUN sed -i 's/^user nginx;/user www-data;/' /etc/nginx/nginx.conf
 
 # Set working directory
 WORKDIR /app
@@ -70,7 +72,7 @@ WORKDIR /app
 COPY . /app
 
 # Set permissions
-RUN chown -R nobody:nobody /app \
+RUN chown -R www-data:www-data /app \
     && chmod -R 755 /app \
     && chmod -R 777 /app/pp-content \
     && chmod -R 777 /app/pp-media \
