@@ -19,15 +19,11 @@ RUN apk add --no-cache \
     && docker-php-ext-enable imagick \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
-        pdo \
         pdo_mysql \
         gd \
         fileinfo \
         zip \
-        mbstring \
-        tokenizer \
         bcmath \
-        curl \
         opcache \
     && apk del .build-deps \
     && rm -rf /tmp/* /var/cache/apk/*
