@@ -10,6 +10,7 @@
         "ext-mbstring": "*",
         "ext-tokenizer": "*",
         "ext-curl": "*",
-        "ext-openssl": "*"
+        "ext-openssl": "*",
+        "ext-imagick": "*"
     }
 }
