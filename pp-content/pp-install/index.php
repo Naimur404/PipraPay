@@ -64,7 +64,17 @@
                 $pdo->commit();
             }
 
-            // Write config file
+            // Store config in session for step 3
+            $_SESSION['pp_install_db'] = [
+                'host' => $host,
+                'port' => $port,
+                'user' => $username,
+                'pass' => $password,
+                'name' => $dbname,
+                'prefix' => $tablePrefix
+            ];
+
+            // Also try writing temp file as fallback
             $configContent = "<?php
     \$db_host = '".addslashes($host)."';
     \$db_port = '".addslashes($port)."';
@@ -73,8 +83,7 @@
     \$db_name = '".addslashes($dbname)."';
     \$db_prefix = '".addslashes($tablePrefix)."';
 ?>";
-
-            file_put_contents(__DIR__ . '/../../pp-temp-config.php', $configContent);
+            @file_put_contents(__DIR__ . '/../../pp-temp-config.php', $configContent);
 
             echo json_encode(['status' => 'true', 'title' => 'Imported successfully', 'message' => 'Database connection verified and imported successfully.']);
         } catch (Throwable $e) {
@@ -89,9 +98,16 @@
 
         
     if(isset($_POST['adminName'])){
-        // Ensure temp config is loaded for DB connection
+        // Load DB config from session or temp file
         $tempConfigPath = __DIR__ . '/../../pp-temp-config.php';
-        if(file_exists($tempConfigPath)){
+        if(!empty($_SESSION['pp_install_db'])){
+            $db_host = $_SESSION['pp_install_db']['host'];
+            $db_port = $_SESSION['pp_install_db']['port'];
+            $db_user = $_SESSION['pp_install_db']['user'];
+            $db_pass = $_SESSION['pp_install_db']['pass'];
+            $db_name = $_SESSION['pp_install_db']['name'];
+            $db_prefix = $_SESSION['pp_install_db']['prefix'];
+        } elseif(file_exists($tempConfigPath)){
             require_once $tempConfigPath;
         } else {
             echo json_encode(['status' => 'false', 'message' => 'Database config not found. Please go back to the Database step.']);
@@ -146,28 +162,28 @@
 
                     insertData($db_prefix.'currency', $columns, $values);
 
-                    $tempFile  = __DIR__ . '/../../pp-temp-config.php';
                     $finalFile = __DIR__ . '/../../pp-config.php';
 
-                    if (!file_exists($tempFile)) {
-                        echo json_encode(['status' => 'false', 'message' => 'Temp config file not found.']);
-                        exit;
-                    }
-
-                    // Read temp content
-                    $configContent = file_get_contents($tempFile);
-                    if ($configContent === false) {
-                        echo json_encode(['status' => 'false', 'message' => 'Failed to read temp config file.']);
-                        exit;
-                    }
+                    // Build config content from session or temp file
+                    $configContent = "<?php
+    \$db_host = '".addslashes($db_host)."';
+    \$db_port = '".addslashes($db_port)."';
+    \$db_user = '".addslashes($db_user)."';
+    \$db_pass = '".addslashes($db_pass)."';
+    \$db_name = '".addslashes($db_name)."';
+    \$db_prefix = '".addslashes($db_prefix)."';
+?>";
 
                     // Write final config
                     if (file_put_contents($finalFile, $configContent) === false) {
-                        echo json_encode(['status' => 'false', 'message' => 'Failed to create final config file.']);
+                        echo json_encode(['status' => 'false', 'message' => 'Failed to create config file. Check directory permissions.']);
                         exit;
                     }
 
-                    unlink($tempFile);
+                    // Clean up
+                    $tempFile = __DIR__ . '/../../pp-temp-config.php';
+                    @unlink($tempFile);
+                    unset($_SESSION['pp_install_db']);
 
                     echo json_encode(['status' => "true", 'message' => 'Install Completed.']);
                 }else{
