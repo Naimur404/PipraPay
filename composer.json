@@ -1,0 +1,15 @@
+{
+    "require": {
+        "php": ">=8.2",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*",
+        "ext-gd": "*",
+        "ext-fileinfo": "*",
+        "ext-zip": "*",
+        "ext-bcmath": "*",
+        "ext-mbstring": "*",
+        "ext-tokenizer": "*",
+        "ext-curl": "*",
+        "ext-openssl": "*"
+    }
+}
