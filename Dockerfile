@@ -31,8 +31,9 @@ RUN apk add --no-cache \
 # PHP configuration
 COPY docker/php.ini "$PHP_INI_DIR/conf.d/custom.ini"
 
-# Nginx configuration
-RUN mkdir -p /run/nginx /var/log/nginx
+# Nginx configuration — remove Alpine default, use ours
+RUN mkdir -p /run/nginx /var/log/nginx \
+    && rm -f /etc/nginx/http.d/default.conf
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 COPY docker/default.conf /etc/nginx/http.d/default.conf
 
