@@ -80,11 +80,12 @@
     }
 
     function connectDatabase() {
-        global $db_host, $db_user, $db_pass, $db_name;
+        global $db_host, $db_port, $db_user, $db_pass, $db_name;
 
         try {
             // Build DSN
-            $dsn = "mysql:host=$db_host;dbname=$db_name;charset=utf8mb4";
+            $port = !empty($db_port) ? $db_port : '3306';
+            $dsn = "mysql:host=$db_host;port=$port;dbname=$db_name;charset=utf8mb4";
 
             // Create PDO instance
             $pdo = new PDO($dsn, $db_user, $db_pass, [
