@@ -1,0 +1,10 @@
+.git
+.gitignore
+.dockerignore
+docker-compose.yml
+README.md
+LICENSE
+TRADEMARK.md
+pp-config.php
+pp-temp-config.php
+.env

@@ -1,0 +1,5 @@
+pp-config.php
+pp-temp-config.php
+.env
+.DS_Store
+*.log
