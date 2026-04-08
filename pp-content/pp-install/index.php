@@ -163,6 +163,12 @@
                     insertData($db_prefix.'currency', $columns, $values);
 
                     $finalFile = __DIR__ . '/../../pp-config.php';
+                    $appRoot = dirname($finalFile);
+
+                    // Ensure directory is writable
+                    if (!is_writable($appRoot)) {
+                        @chmod($appRoot, 0775);
+                    }
 
                     // Build config content from session or temp file
                     $configContent = "<?php
