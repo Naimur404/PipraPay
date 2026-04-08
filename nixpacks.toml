@@ -1,0 +1,2 @@
+[phases.build]
+cmds = ["chmod -R 775 /app", "mkdir -p /app/pp-media /app/pp-content"]
