@@ -1,54 +1,23 @@
-FROM php:8.2-fpm-alpine
+FROM php:8.2-apache
 
-# Install system dependencies
-RUN apk add --no-cache \
-    nginx \
-    imagemagick \
-    imagemagick-dev \
-    libzip-dev \
-    libpng-dev \
-    libjpeg-turbo-dev \
-    freetype-dev \
-    oniguruma-dev \
-    curl-dev \
-    $PHPIZE_DEPS
-
-# Install PHP extensions (tokenizer, mbstring, curl are already built-in)
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) \
-        pdo \
+# Install system packages needed by the app and PHP extensions.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        libmagickwand-dev \
+        libzip-dev \
+        libpng-dev \
+        libjpeg62-turbo-dev \
+        libfreetype6-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j"$(nproc)" \
         pdo_mysql \
         gd \
-        fileinfo \
         zip \
         bcmath \
     && pecl install imagick \
-    && docker-php-ext-enable imagick
-
-# Clean up build deps
-RUN apk del $PHPIZE_DEPS imagemagick-dev
-
-# Replace the default PHP-FPM pool config so we do not define the same pool twice.
-RUN rm -f /usr/local/etc/php-fpm.d/www.conf \
-    && { \
-        echo '[global]'; \
-        echo 'daemonize = no'; \
-        echo 'error_log = /proc/self/fd/2'; \
-        echo '[www]'; \
-        echo 'user = www-data'; \
-        echo 'group = www-data'; \
-        echo 'listen = /run/php-fpm.sock'; \
-        echo 'listen.owner = www-data'; \
-        echo 'listen.group = www-data'; \
-        echo 'listen.mode = 0660'; \
-        echo 'pm = dynamic'; \
-        echo 'pm.max_children = 20'; \
-        echo 'pm.start_servers = 5'; \
-        echo 'pm.min_spare_servers = 3'; \
-        echo 'pm.max_spare_servers = 10'; \
-        echo 'catch_workers_output = yes'; \
-        echo 'clear_env = no'; \
-    } > /usr/local/etc/php-fpm.d/www.conf
+    && docker-php-ext-enable imagick \
+    && a2enmod rewrite headers \
+    && rm -rf /var/lib/apt/lists/*
 
 # PHP settings
 RUN { \
@@ -59,29 +28,19 @@ RUN { \
     echo 'display_errors = Off'; \
 } > /usr/local/etc/php/conf.d/custom.ini
 
-# Copy nginx config
-COPY docker/nginx.conf /etc/nginx/http.d/default.conf
+# Replace the default Apache site with one that honors the shipped .htaccess rules.
+COPY docker/apache.conf /etc/apache2/sites-available/000-default.conf
 
-# Ensure nginx runs as www-data so it can talk to the PHP-FPM socket.
-RUN sed -i 's/^user nginx;/user www-data;/' /etc/nginx/nginx.conf
-
-# Set working directory
-WORKDIR /app
+WORKDIR /var/www/html
 
 # Copy application code
-COPY . /app
+COPY . /var/www/html
 
-# Set permissions
-RUN chown -R www-data:www-data /app \
-    && chmod -R 755 /app \
-    && chmod -R 777 /app/pp-content \
-    && chmod -R 777 /app/pp-media \
-    && mkdir -p /run/nginx /run
-
-# Startup script
-COPY docker/start.sh /start.sh
-RUN chmod +x /start.sh
+# Ensure the installer can write configuration and media files.
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html \
+    && chmod -R 775 /var/www/html/pp-content \
+    && chmod -R 775 /var/www/html/pp-media \
+    && chmod 664 /var/www/html/index.php
 
 EXPOSE 80
-
-CMD ["/start.sh"]
