@@ -14,7 +14,7 @@ RUN apk add --no-cache \
     curl-dev \
     $PHPIZE_DEPS
 
-# Install PHP extensions
+# Install PHP extensions (tokenizer, mbstring, curl are already built-in)
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
         pdo \
@@ -23,9 +23,6 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         fileinfo \
         zip \
         bcmath \
-        mbstring \
-        tokenizer \
-        curl \
     && pecl install imagick \
     && docker-php-ext-enable imagick
 
