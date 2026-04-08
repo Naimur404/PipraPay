@@ -1,0 +1,4 @@
+providers = ["php"]
+
+[start]
+cmd = "bash /app/start.sh"
