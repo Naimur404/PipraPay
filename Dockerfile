@@ -1,6 +1,6 @@
 FROM php:8.2-fpm-alpine
 
-# Install system dependencies
+# Install system dependencies and PHP extensions
 RUN apk add --no-cache \
     nginx \
     supervisor \
@@ -29,14 +29,10 @@ RUN apk add --no-cache \
     && rm -rf /tmp/* /var/cache/apk/*
 
 # PHP configuration
-RUN cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 COPY docker/php.ini "$PHP_INI_DIR/conf.d/custom.ini"
 
-# PHP-FPM pool configuration (use Unix socket)
-COPY docker/php-fpm.conf /usr/local/etc/php-fpm.d/zz-docker.conf
-
 # Nginx configuration
-RUN mkdir -p /run/nginx
+RUN mkdir -p /run/nginx /var/log/nginx
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 COPY docker/default.conf /etc/nginx/http.d/default.conf
 
